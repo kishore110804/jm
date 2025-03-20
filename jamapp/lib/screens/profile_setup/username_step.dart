@@ -14,13 +14,13 @@ class UsernameStep extends StatefulWidget {
 class _UsernameStepState extends State<UsernameStep> {
   final TextEditingController _usernameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  
+
   @override
   void dispose() {
     _usernameController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Padding(

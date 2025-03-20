@@ -11,9 +11,15 @@ class AuthService {
   Stream<User?> get user => _auth.authStateChanges();
 
   // Sign in with email and password
-  Future<UserCredential?> signInWithEmailAndPassword(String email, String password) async {
+  Future<UserCredential?> signInWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
     try {
-      return await _auth.signInWithEmailAndPassword(email: email, password: password);
+      return await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
     } catch (e) {
       print('Error signing in: $e');
       return null;
@@ -25,11 +31,12 @@ class AuthService {
     try {
       // Trigger the authentication flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      
+
       if (googleUser == null) return null;
 
       // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       // Create a new credential
       final credential = GoogleAuthProvider.credential(
@@ -39,7 +46,7 @@ class AuthService {
 
       // Sign in to Firebase with the Google credential
       final userCredential = await _auth.signInWithCredential(credential);
-      
+
       // Check if this is a new user
       if (userCredential.additionalUserInfo?.isNewUser ?? false) {
         // If new user, they'll need to complete profile setup
@@ -51,7 +58,7 @@ class AuthService {
           'profileComplete': false,
         });
       }
-      
+
       return userCredential;
     } catch (e) {
       print('Error signing in with Google: $e');
@@ -60,20 +67,23 @@ class AuthService {
   }
 
   // Register with email and password
-  Future<UserCredential?> registerWithEmailAndPassword(String email, String password) async {
+  Future<UserCredential?> registerWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email, 
-        password: password
+        email: email,
+        password: password,
       );
-      
+
       // Create a user document in Firestore
       await _firestore.collection('users').doc(userCredential.user!.uid).set({
         'email': email,
         'createdAt': Timestamp.now(),
         'profileComplete': false,
       });
-      
+
       return userCredential;
     } catch (e) {
       print('Error registering: $e');
@@ -86,13 +96,12 @@ class AuthService {
     try {
       User? currentUser = _auth.currentUser;
       if (currentUser == null) return false;
-      
-      DocumentSnapshot doc = await _firestore
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
-      
-      return doc.exists && (doc.data() as Map<String, dynamic>)['profileComplete'] == true;
+
+      DocumentSnapshot doc =
+          await _firestore.collection('users').doc(currentUser.uid).get();
+
+      return doc.exists &&
+          (doc.data() as Map<String, dynamic>)['profileComplete'] == true;
     } catch (e) {
       print('Error checking profile: $e');
       return false;
@@ -101,15 +110,15 @@ class AuthService {
 
   // Update user profile
   Future<void> updateUserProfile({
-    required String name, 
-    required String username, 
+    required String name,
+    required String username,
     String? age,
     String? photoURL,
   }) async {
     try {
       User? currentUser = _auth.currentUser;
       if (currentUser == null) return;
-      
+
       await _firestore.collection('users').doc(currentUser.uid).update({
         'name': name,
         'username': username,
@@ -139,22 +148,20 @@ class AuthService {
   User? getCurrentUser() {
     return _auth.currentUser;
   }
-  
+
   // Get user profile data
   Future<Map<String, dynamic>?> getUserProfile() async {
     try {
       User? currentUser = _auth.currentUser;
       if (currentUser == null) return null;
-      
-      DocumentSnapshot doc = await _firestore
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
-      
+
+      DocumentSnapshot doc =
+          await _firestore.collection('users').doc(currentUser.uid).get();
+
       if (doc.exists) {
         return doc.data() as Map<String, dynamic>;
       }
-      
+
       return null;
     } catch (e) {
       print('Error getting profile: $e');

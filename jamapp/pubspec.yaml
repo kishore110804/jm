@@ -44,6 +44,7 @@ dependencies:
   provider: ^6.0.5
   google_sign_in: ^6.1.5  # Add Google Sign-In dependency
   image_picker: ^1.0.4  # For picking profile photos
+  shared_preferences: ^2.2.1  # Add shared_preferences for app settings
 
 dev_dependencies:
   flutter_test:

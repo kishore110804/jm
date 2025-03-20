@@ -13,7 +13,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final AuthService _auth = AuthService();
   final _formKey = GlobalKey<FormState>();
-  
+
   String email = '';
   String password = '';
   String error = '';
@@ -25,7 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
       googleLoading = true;
       error = '';
     });
-    
+
     try {
       var result = await _auth.signInWithGoogle();
       if (result == null) {
@@ -73,7 +73,10 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SingleChildScrollView(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 30),
-          height: MediaQuery.of(context).size.height - AppBar().preferredSize.height - MediaQuery.of(context).padding.top,
+          height:
+              MediaQuery.of(context).size.height -
+              AppBar().preferredSize.height -
+              MediaQuery.of(context).padding.top,
           child: Form(
             key: _formKey,
             child: Column(
@@ -114,14 +117,21 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: const TextStyle(color: ThemeConfig.textIvory),
                   decoration: InputDecoration(
                     labelText: 'Email',
-                    prefixIcon: const Icon(Icons.email, color: ThemeConfig.textIvory),
+                    prefixIcon: const Icon(
+                      Icons.email,
+                      color: ThemeConfig.textIvory,
+                    ),
                     labelStyle: const TextStyle(color: ThemeConfig.textIvory),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: ThemeConfig.textIvory),
+                      borderSide: const BorderSide(
+                        color: ThemeConfig.textIvory,
+                      ),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: ThemeConfig.primaryGreen),
+                      borderSide: const BorderSide(
+                        color: ThemeConfig.primaryGreen,
+                      ),
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
@@ -136,18 +146,29 @@ class _LoginScreenState extends State<LoginScreen> {
                   obscureText: true,
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock, color: ThemeConfig.textIvory),
+                    prefixIcon: const Icon(
+                      Icons.lock,
+                      color: ThemeConfig.textIvory,
+                    ),
                     labelStyle: const TextStyle(color: ThemeConfig.textIvory),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: ThemeConfig.textIvory),
+                      borderSide: const BorderSide(
+                        color: ThemeConfig.textIvory,
+                      ),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: ThemeConfig.primaryGreen),
+                      borderSide: const BorderSide(
+                        color: ThemeConfig.primaryGreen,
+                      ),
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  validator: (val) => val!.length < 6 ? 'Password must be 6+ characters' : null,
+                  validator:
+                      (val) =>
+                          val!.length < 6
+                              ? 'Password must be 6+ characters'
+                              : null,
                   onChanged: (val) {
                     setState(() => password = val);
                   },
@@ -163,58 +184,75 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    onPressed: loading ? null : () async {
-                      if (_formKey.currentState!.validate()) {
-                        setState(() {
-                          loading = true;
-                          error = '';
-                        });
-                        
-                        var result = await _auth.signInWithEmailAndPassword(email, password);
-                        if (result == null) {
-                          setState(() {
-                            error = 'Could not sign in with those credentials';
-                            loading = false;
-                          });
-                        } else {
-                          // Check if profile setup is needed
-                          bool profileComplete = await _auth.isProfileComplete();
-                          if (!profileComplete) {
-                            // Navigate to profile setup
-                            if (mounted) {
-                              Navigator.pushReplacementNamed(context, '/profile_setup');
-                            }
-                          } else {
-                            // Go back to profile screen
-                            if (mounted) {
-                              Navigator.of(context).pop();
-                            }
-                          }
-                        }
-                      }
-                    },
-                    child: loading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.black,
-                              strokeWidth: 3,
+                    onPressed:
+                        loading
+                            ? null
+                            : () async {
+                              if (_formKey.currentState!.validate()) {
+                                setState(() {
+                                  loading = true;
+                                  error = '';
+                                });
+
+                                var result = await _auth
+                                    .signInWithEmailAndPassword(
+                                      email,
+                                      password,
+                                    );
+                                if (result == null) {
+                                  setState(() {
+                                    error =
+                                        'Could not sign in with those credentials';
+                                    loading = false;
+                                  });
+                                } else {
+                                  // Check if profile setup is needed
+                                  bool profileComplete =
+                                      await _auth.isProfileComplete();
+                                  if (!profileComplete) {
+                                    // Navigate to profile setup
+                                    if (mounted) {
+                                      Navigator.pushReplacementNamed(
+                                        context,
+                                        '/profile_setup',
+                                      );
+                                    }
+                                  } else {
+                                    // Go back to profile screen
+                                    if (mounted) {
+                                      Navigator.of(context).pop();
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                    child:
+                        loading
+                            ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.black,
+                                strokeWidth: 3,
+                              ),
+                            )
+                            : Text(
+                              'SIGN IN',
+                              style: GoogleFonts.poppins(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          )
-                        : Text(
-                            'SIGN IN',
-                            style: GoogleFonts.poppins(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
                   ),
                 ),
                 const SizedBox(height: 20),
                 Row(
                   children: [
-                    Expanded(child: Divider(color: ThemeConfig.textIvory.withOpacity(0.3))),
+                    Expanded(
+                      child: Divider(
+                        color: ThemeConfig.textIvory.withOpacity(0.3),
+                      ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: Text(
@@ -224,26 +262,32 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    Expanded(child: Divider(color: ThemeConfig.textIvory.withOpacity(0.3))),
+                    Expanded(
+                      child: Divider(
+                        color: ThemeConfig.textIvory.withOpacity(0.3),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    icon: googleLoading 
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
+                    icon:
+                        googleLoading
+                            ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: ThemeConfig.textIvory,
+                                strokeWidth: 2,
+                              ),
+                            )
+                            : const Icon(
+                              Icons.g_mobiledata,
+                              size: 30,
                               color: ThemeConfig.textIvory,
-                              strokeWidth: 2,
                             ),
-                          )
-                        : Image.network(
-                            'https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg',
-                            height: 20,
-                          ),
                     label: Text(
                       'Continue with Google',
                       style: GoogleFonts.poppins(
@@ -252,7 +296,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: ThemeConfig.textIvory.withOpacity(0.5)),
+                      side: BorderSide(
+                        color: ThemeConfig.textIvory.withOpacity(0.5),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -267,9 +313,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Text(
                       'Don\'t have an account? ',
-                      style: GoogleFonts.poppins(
-                        color: ThemeConfig.textIvory,
-                      ),
+                      style: GoogleFonts.poppins(color: ThemeConfig.textIvory),
                     ),
                     GestureDetector(
                       onTap: () {

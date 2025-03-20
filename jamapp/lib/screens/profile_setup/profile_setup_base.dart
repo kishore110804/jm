@@ -24,72 +24,88 @@ class _ProfileSetupBaseState extends State<ProfileSetupBase> {
   String? _photoURL;
 
   final List<Widget> _pages = [];
-  
+
   @override
   void initState() {
     super.initState();
-    _pages.add(NameStep(onNext: (name) {
-      setState(() {
-        _name = name;
-      });
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }));
-    
-    _pages.add(UsernameStep(onNext: (username) {
-      setState(() {
-        _username = username;
-      });
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }));
-    
-    _pages.add(AgeStep(onNext: (age) {
-      setState(() {
-        _age = age;
-      });
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }));
-    
-    _pages.add(PhotoStep(onComplete: (photoURL) async {
-      setState(() {
-        _photoURL = photoURL;
-      });
-      
-      // Save all profile data
-      try {
-        await _authService.updateUserProfile(
-          name: _name,
-          username: _username,
-          age: _age,
-          photoURL: _photoURL,
-        );
-        
-        // Navigate back to profile page
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Error saving profile: $e',
-              style: GoogleFonts.poppins(),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }));
+    _pages.add(
+      NameStep(
+        onNext: (name) {
+          setState(() {
+            _name = name;
+          });
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        },
+      ),
+    );
+
+    _pages.add(
+      UsernameStep(
+        onNext: (username) {
+          setState(() {
+            _username = username;
+          });
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        },
+      ),
+    );
+
+    _pages.add(
+      AgeStep(
+        onNext: (age) {
+          setState(() {
+            _age = age;
+          });
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        },
+      ),
+    );
+
+    _pages.add(
+      PhotoStep(
+        onComplete: (photoURL) async {
+          setState(() {
+            _photoURL = photoURL;
+          });
+
+          // Save all profile data
+          try {
+            await _authService.updateUserProfile(
+              name: _name,
+              username: _username,
+              age: _age,
+              photoURL: _photoURL,
+            );
+
+            // Navigate back to profile page
+            if (mounted) {
+              Navigator.of(context).pop();
+            }
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Error saving profile: $e',
+                  style: GoogleFonts.poppins(),
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+      ),
+    );
   }
-  
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -103,21 +119,20 @@ class _ProfileSetupBaseState extends State<ProfileSetupBase> {
       appBar: AppBar(
         title: Text(
           'Complete Your Profile',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.bold,
-          ),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
-        leading: _currentPage > 0 
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  _pageController.previousPage(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                },
-              )
-            : null,
+        leading:
+            _currentPage > 0
+                ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    _pageController.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                )
+                : null,
       ),
       body: Column(
         children: [
@@ -125,7 +140,9 @@ class _ProfileSetupBaseState extends State<ProfileSetupBase> {
           LinearProgressIndicator(
             value: (_currentPage + 1) / _pages.length,
             backgroundColor: Colors.grey[800],
-            valueColor: const AlwaysStoppedAnimation<Color>(ThemeConfig.primaryGreen),
+            valueColor: const AlwaysStoppedAnimation<Color>(
+              ThemeConfig.primaryGreen,
+            ),
           ),
           Expanded(
             child: PageView(

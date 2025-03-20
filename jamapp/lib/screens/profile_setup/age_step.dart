@@ -14,13 +14,13 @@ class AgeStep extends StatefulWidget {
 class _AgeStepState extends State<AgeStep> {
   final TextEditingController _ageController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  
+
   @override
   void dispose() {
     _ageController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -104,7 +104,11 @@ class _AgeStepState extends State<AgeStep> {
                   backgroundColor: ThemeConfig.primaryGreen,
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      widget.onNext(_ageController.text.isEmpty ? null : _ageController.text);
+                      widget.onNext(
+                        _ageController.text.isEmpty
+                            ? null
+                            : _ageController.text,
+                      );
                     }
                   },
                   child: const Icon(Icons.arrow_forward, color: Colors.black),

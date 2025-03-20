@@ -46,6 +46,14 @@ class _MainScreenState extends State<MainScreen> {
           alignment: Alignment.centerLeft,
           child: Text(_titles[_selectedIndex]),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.pushNamed(context, '/settings');
+            },
+          ),
+        ],
       ),
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(

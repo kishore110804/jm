@@ -19,7 +19,7 @@ class _PhotoStepState extends State<PhotoStep> {
   final ImagePicker _picker = ImagePicker();
   File? _imageFile;
   bool _uploading = false;
-  
+
   Future<void> _pickImage() async {
     final XFile? pickedFile = await _picker.pickImage(
       source: ImageSource.gallery,
@@ -27,50 +27,50 @@ class _PhotoStepState extends State<PhotoStep> {
       maxHeight: 1000,
       imageQuality: 85,
     );
-    
+
     if (pickedFile != null) {
       setState(() {
         _imageFile = File(pickedFile.path);
       });
     }
   }
-  
+
   Future<void> _uploadImage() async {
     if (_imageFile == null) {
       // No image to upload, just complete
       widget.onComplete(null);
       return;
     }
-    
+
     setState(() {
       _uploading = true;
     });
-    
+
     try {
       final User? currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) {
         throw Exception('User not logged in');
       }
-      
+
       final Reference storageRef = FirebaseStorage.instance
           .ref()
           .child('profile_photos')
           .child('${currentUser.uid}.jpg');
-      
+
       await storageRef.putFile(_imageFile!);
       final String downloadURL = await storageRef.getDownloadURL();
-      
+
       widget.onComplete(downloadURL);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error uploading image: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error uploading image: $e')));
       setState(() {
         _uploading = false;
       });
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -106,33 +106,35 @@ class _PhotoStepState extends State<PhotoStep> {
                   color: Colors.grey[900],
                   shape: BoxShape.circle,
                   border: Border.all(color: ThemeConfig.primaryGreen, width: 2),
-                  image: _imageFile != null
-                      ? DecorationImage(
-                          image: FileImage(_imageFile!),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
+                  image:
+                      _imageFile != null
+                          ? DecorationImage(
+                            image: FileImage(_imageFile!),
+                            fit: BoxFit.cover,
+                          )
+                          : null,
                 ),
-                child: _imageFile == null
-                    ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.add_a_photo,
-                            color: ThemeConfig.primaryGreen,
-                            size: 48,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Add Photo',
-                            style: GoogleFonts.poppins(
-                              color: ThemeConfig.textIvory,
-                              fontWeight: FontWeight.w500,
+                child:
+                    _imageFile == null
+                        ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.add_a_photo,
+                              color: ThemeConfig.primaryGreen,
+                              size: 48,
                             ),
-                          ),
-                        ],
-                      )
-                    : null,
+                            const SizedBox(height: 8),
+                            Text(
+                              'Add Photo',
+                              style: GoogleFonts.poppins(
+                                color: ThemeConfig.textIvory,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        )
+                        : null,
               ),
             ),
           ),
@@ -141,11 +143,12 @@ class _PhotoStepState extends State<PhotoStep> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               TextButton(
-                onPressed: _uploading 
-                    ? null 
-                    : () {
-                        widget.onComplete(null); // Skip this step
-                      },
+                onPressed:
+                    _uploading
+                        ? null
+                        : () {
+                          widget.onComplete(null); // Skip this step
+                        },
                 child: Text(
                   'Skip',
                   style: GoogleFonts.poppins(
@@ -156,13 +159,15 @@ class _PhotoStepState extends State<PhotoStep> {
               ),
               _uploading
                   ? const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(ThemeConfig.primaryGreen),
-                    )
-                  : FloatingActionButton(
-                      backgroundColor: ThemeConfig.primaryGreen,
-                      onPressed: _uploadImage,
-                      child: const Icon(Icons.check, color: Colors.black),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      ThemeConfig.primaryGreen,
                     ),
+                  )
+                  : FloatingActionButton(
+                    backgroundColor: ThemeConfig.primaryGreen,
+                    onPressed: _uploadImage,
+                    child: const Icon(Icons.check, color: Colors.black),
+                  ),
             ],
           ),
         ],
