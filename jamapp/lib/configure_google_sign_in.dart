@@ -6,12 +6,10 @@ import 'firebase_options.dart';
 Future<void> configureApp() async {
   // Ensure Flutter is initialized
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Firebase with auto-generated options
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   // Print a message for debugging
   debugPrint('📱 Firebase initialized successfully');
 }

@@ -66,7 +66,35 @@ class AuthService {
         'message': 'Successfully signed in',
       };
     } on FirebaseAuthException catch (e) {
-      return await _handleEmailPasswordSignInError(e, email, password, true);
+      _logAuthError('Email/Password Sign In', e);
+
+      String message;
+      switch (e.code) {
+        case 'user-not-found':
+          message = 'No user found with this email';
+          break;
+        case 'wrong-password':
+          message = 'Invalid password';
+          break;
+        case 'user-disabled':
+          message = 'This account has been disabled';
+          break;
+        case 'invalid-email':
+          message = 'Invalid email address';
+          break;
+        case 'too-many-requests':
+          message = 'Too many sign-in attempts. Try again later';
+          break;
+        default:
+          message = 'Authentication failed: ${e.message}';
+      }
+
+      return {
+        'success': false,
+        'message': message,
+        'error': e,
+        'error_code': e.code,
+      };
     } catch (e) {
       _logAuthError('Email/Password Sign In', e);
       return {
@@ -77,61 +105,54 @@ class AuthService {
     }
   }
 
-  // Use this method to add proper error handling for email/password failures
-  Future<Map<String, dynamic>> _handleEmailPasswordSignInError(
-    FirebaseAuthException e,
-    String email,
-    String password,
-    bool isSignIn, // true for sign in, false for register
-  ) async {
-    _logAuthError(
-      isSignIn ? 'Email/Password Sign In' : 'Email/Password Register',
-      e,
-    );
+  // Sign in with Google - direct Firebase approach to avoid API issues
+  Future<Map<String, dynamic>> signInWithGoogle() async {
+    try {
+      // Use FirebaseAuth directly to open the Google sign-in flow
+      final googleProvider = GoogleAuthProvider();
 
-    String message;
-    bool recoverable = false;
-    String? alternativeError;
+      // Add scope to match what we need
+      googleProvider.addScope('email');
+      googleProvider.addScope('profile');
 
-    switch (e.code) {
-      case 'user-not-found':
-        // If user not found during sign in, we can try creating an account instead
-        if (isSignIn) {
-          try {
-            // Try to register since user doesn't exist
-            final result = await registerWithEmailAndPassword(email, password);
-            return result;
-          } catch (regError) {
-            alternativeError =
-                'Failed to create account automatically: $regError';
-          }
-        }
-        message = 'No user found with this email';
-        break;
-      case 'wrong-password':
-        message = 'Invalid password';
-        break;
-      case 'user-disabled':
-        message = 'This account has been disabled';
-        break;
-      case 'invalid-email':
-        message = 'Invalid email address';
-        break;
-      case 'too-many-requests':
-        message = 'Too many sign-in attempts. Try again later';
-        recoverable = true;
-        break;
-      default:
-        message = 'Authentication failed: ${e.message}';
+      // For Android, use signInWithProvider which is more reliable
+      UserCredential userCredential;
+
+      try {
+        // Try the direct sign-in approach
+        userCredential = await _auth.signInWithProvider(googleProvider);
+      } catch (e) {
+        // If direct sign-in fails, try the popup approach as fallback
+        userCredential = await _auth.signInWithPopup(googleProvider);
+      }
+
+      _logAuthSuccess('Google Sign In', userCredential.user?.uid);
+
+      // Check if this is a new user
+      if (userCredential.additionalUserInfo?.isNewUser ?? false) {
+        // Create initial user document with default stats
+        await _createNewUserProfile(userCredential.user!);
+      }
+
+      return {
+        'success': true,
+        'user': userCredential.user,
+        'isNewUser': userCredential.additionalUserInfo?.isNewUser ?? false,
+        'message': 'Successfully signed in with Google',
+      };
+    } catch (e) {
+      _logAuthError('Google Sign In', e);
+
+      // More descriptive error message based on error type
+      String errorMessage = 'An unexpected error occurred';
+      if (e.toString().contains('FirebaseException')) {
+        errorMessage = 'Firebase error: ${e.toString()}';
+      } else if (e.toString().contains('PlatformException')) {
+        errorMessage = 'Platform error: Try using email sign-in instead';
+      }
+
+      return {'success': false, 'message': errorMessage, 'error': e};
     }
-
-    return {
-      'success': false,
-      'message': message,
-      'error': e,
-      'recoverable': recoverable,
-      'alternativeError': alternativeError,
-    };
   }
 
   // Check if Google Sign In is properly configured
@@ -142,62 +163,6 @@ class AuthService {
     } catch (e) {
       _logError('Google Sign In check', e);
       return false;
-    }
-  }
-
-  // Sign in with Google - simplified implementation to avoid API errors
-  Future<Map<String, dynamic>> signInWithGoogle() async {
-    try {
-      // Regular Google Sign In flow for phones
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-
-      if (googleUser == null) {
-        return {
-          'success': false,
-          'message': 'Google sign in was cancelled by user',
-        };
-      }
-
-      try {
-        // Obtain the auth details from the request
-        final GoogleSignInAuthentication googleAuth =
-            await googleUser.authentication;
-
-        // Create a new credential
-        final credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
-
-        // Sign in to Firebase with the Google credential
-        final userCredential = await _auth.signInWithCredential(credential);
-
-        _logAuthSuccess('Google Sign In', userCredential.user?.uid);
-
-        // Check if this is a new user
-        if (userCredential.additionalUserInfo?.isNewUser ?? false) {
-          // Create initial user document with default stats
-          await _createNewUserProfile(userCredential.user!);
-        }
-
-        return {
-          'success': true,
-          'user': userCredential.user,
-          'isNewUser': userCredential.additionalUserInfo?.isNewUser ?? false,
-          'message': 'Successfully signed in with Google',
-        };
-      } catch (authError) {
-        // Use the email/password fallback immediately on any auth error
-        return await _createAccountFromGoogleData(googleUser);
-      }
-    } catch (e) {
-      _logAuthError('Google Sign In', e);
-      return {
-        'success': false,
-        'message':
-            'Failed to sign in with Google. Please try email sign-in instead.',
-        'error': e,
-      };
     }
   }
 
@@ -602,7 +567,33 @@ class AuthService {
         'message': 'Registration successful',
       };
     } on FirebaseAuthException catch (e) {
-      return await _handleEmailPasswordSignInError(e, email, password, false);
+      // Use direct error handling instead of calling undefined method
+      _logAuthError('User Registration', e);
+
+      String message;
+      switch (e.code) {
+        case 'email-already-in-use':
+          message = 'This email is already registered';
+          break;
+        case 'invalid-email':
+          message = 'Invalid email address';
+          break;
+        case 'operation-not-allowed':
+          message = 'Email/password accounts are not enabled';
+          break;
+        case 'weak-password':
+          message = 'Password is too weak';
+          break;
+        default:
+          message = 'Registration failed: ${e.message}';
+      }
+
+      return {
+        'success': false,
+        'message': message,
+        'error': e,
+        'error_code': e.code,
+      };
     } catch (e) {
       _logAuthError('User Registration', e);
       return {

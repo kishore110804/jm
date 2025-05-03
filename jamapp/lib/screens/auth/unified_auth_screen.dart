@@ -101,7 +101,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     }
   }
 
-  // Handle Email/Password sign in
+  // Handle Email/Password sign in with improved error handling
   Future<void> _signInWithEmail() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       setState(() {
@@ -129,19 +129,17 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
 
       final authService = Provider.of<AuthService>(context, listen: false);
 
-      // First check if user exists
-      final userExists = await authService.userExists(_emailController.text);
-
+      // Skip the user existence check since it's causing permission errors
       Map<String, dynamic> result;
 
-      if (userExists) {
-        // Sign in existing user
-        result = await authService.signInWithEmailAndPassword(
-          _emailController.text,
-          _passwordController.text,
-        );
-      } else {
-        // Register new user
+      // Try sign in first
+      result = await authService.signInWithEmailAndPassword(
+        _emailController.text,
+        _passwordController.text,
+      );
+
+      // If sign in fails with user-not-found, try registration
+      if (!result['success'] && result['error_code'] == 'user-not-found') {
         result = await authService.registerWithEmailAndPassword(
           _emailController.text,
           _passwordController.text,
@@ -150,7 +148,8 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
 
       if (result['success']) {
         // For new registrations or incomplete profiles
-        if (!userExists || !(await authService.isProfileComplete())) {
+        final isProfileComplete = await authService.isProfileComplete();
+        if (!isProfileComplete) {
           if (mounted) {
             // Navigate to profile setup
             Navigator.of(context).pushReplacement(
