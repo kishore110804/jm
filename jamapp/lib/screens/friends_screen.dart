@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../utils/theme_config.dart';
-import '../services/auth_service.dart';
 import '../widgets/friends/friend_list_item.dart';
 import '../widgets/friends/stat_comparison_card.dart';
 import '../models/friend.dart';
@@ -253,7 +252,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                 friendStats: friend.stats,
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

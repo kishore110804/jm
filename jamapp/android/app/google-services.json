@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "43608486865",
+    "project_id": "jamos-237de",
+    "storage_bucket": "jamos-237de.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:43608486865:android:b6ae980ba00b87ac4ba6f0",
+        "android_client_info": {
+          "package_name": "com.jamphone.socialmedia"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "43608486865-1ligfo07f6fsqc7d3p0tosb5tprdaqej.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jamphone.socialmedia",
+            "certificate_hash": "5c1d483c73844cee10509624ba1ba562638ba0f2"
+          }
+        },
+        {
+          "client_id": "43608486865-cma3dsqokein36lnb9u4r0sg9d95oket.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALvqimJe8zxz5sH-E4toR_YFWt07UVRgo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "43608486865-cma3dsqokein36lnb9u4r0sg9d95oket.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

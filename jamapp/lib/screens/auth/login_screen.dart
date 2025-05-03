@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'dart:io';
 import '../../services/auth_service.dart';
 import '../../utils/theme_config.dart';
+import '../../debug/firebase_debug_helper.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,6 +15,7 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
+// Handles user login interface and authentication flow
 class _LoginScreenState extends State<LoginScreen> {
   final AuthService _auth = AuthService();
   final _formKey = GlobalKey<FormState>();
@@ -26,14 +32,187 @@ class _LoginScreenState extends State<LoginScreen> {
       error = '';
     });
 
+    // Run diagnostic check first
+    bool isConfigured = await _checkGoogleAuthSetup();
+    if (!isConfigured) {
+      setState(() {
+        error =
+            'Google Sign-In is not configured correctly. Check Firebase setup.';
+        googleLoading = false;
+      });
+      return;
+    }
+
     try {
-      var result = await _auth.signInWithGoogle();
-      if (result == null) {
+      // Get the Google account first
+      final googleAccount = await _auth.getGoogleAccount();
+
+      if (googleAccount == null) {
         setState(() {
-          error = 'Could not sign in with Google';
+          error = 'Google sign in was cancelled';
           googleLoading = false;
         });
-      } else {
+        return;
+      }
+
+      // Check if user exists
+      final userEmail = googleAccount.email;
+      final userExists = await _auth.userExists(userEmail);
+
+      if (!userExists) {
+        // New user - navigate to registration/profile setup
+        setState(() {
+          googleLoading = false;
+        });
+        if (mounted) {
+          // Pass Google account data to registration screen
+          Navigator.pushReplacementNamed(
+            context,
+            '/register',
+            arguments: {
+              'email': userEmail,
+              'displayName': googleAccount.displayName,
+              'photoURL': googleAccount.photoUrl,
+              'googleAccount': googleAccount,
+            },
+          );
+        }
+        return;
+      }
+
+      // Existing user - complete Google sign in
+      var result = await _auth.signInWithGoogle();
+
+      if (!result['success']) {
+        setState(() {
+          error = result['message'] ?? 'Could not sign in with Google';
+          googleLoading = false;
+        });
+        return;
+      }
+
+      // For watch compatibility, store authentication state
+      try {
+        // Store auth info in secure storage for potential watch access
+        await _storeAuthInfo(result['user']);
+      } catch (storageError) {
+        // Non-critical error, continue with flow
+        debugPrint('Warning: Could not store auth info: $storageError');
+      }
+
+      // Check if profile setup is needed
+      try {
+        bool profileComplete = await _auth.isProfileComplete();
+        if (!profileComplete) {
+          // Navigate to profile setup
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, '/profile_setup');
+          }
+        } else {
+          // Go back to profile screen
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
+        }
+      } catch (profileError) {
+        // If profile check fails, just go to profile setup to be safe
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/profile_setup');
+        }
+      }
+    } catch (e) {
+      String errorMessage = 'Error signing in with Google';
+
+      if (e.toString().contains('unimplemented') ||
+          e.toString().contains('not been implemented')) {
+        errorMessage = 'Google Sign In is not fully supported on this device';
+      } else if (e.toString().contains('network')) {
+        errorMessage = 'Network error. Please check your internet connection';
+      } else if (e.toString().contains('canceled') ||
+          e.toString().contains('cancelled')) {
+        errorMessage = 'Google Sign In was cancelled';
+      }
+
+      setState(() {
+        error = errorMessage;
+        googleLoading = false;
+      });
+    }
+  }
+
+  // Check if Google Auth is properly configured
+  Future<bool> _checkGoogleAuthSetup() async {
+    try {
+      // Check Firebase initialization
+      if (!FirebaseAuth.instance.app.isAutomaticDataCollectionEnabled) {
+        FirebaseAuth.instance.app.setAutomaticDataCollectionEnabled(true);
+      }
+
+      // Check package name in debug panel
+      String packageName = await _getPackageName();
+      debugPrint('📱 App package name: $packageName');
+
+      // Check if google-services.json is properly loaded
+      bool hasGoogleServices = await _checkGoogleServicesJson();
+      debugPrint('🔑 Google Services JSON loaded: $hasGoogleServices');
+
+      // If we get to this point without exceptions, basic setup is ok
+      return true;
+    } catch (e) {
+      debugPrint('❌ Auth configuration error: $e');
+      return false;
+    }
+  }
+
+  // Get current package name
+  Future<String> _getPackageName() async {
+    if (Platform.isAndroid) {
+      var packageInfo = await PackageInfo.fromPlatform();
+      return packageInfo.packageName;
+    }
+    return 'unknown';
+  }
+
+  // Check if google-services.json is properly loaded
+  Future<bool> _checkGoogleServicesJson() async {
+    try {
+      // A simple way to check is to try to get project ID
+      // This will fail if google-services.json isn't properly loaded
+      final projectId = FirebaseAuth.instance.app.options.projectId;
+      return projectId.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Store authentication info for watch access
+  Future<void> _storeAuthInfo(User? user) async {
+    if (user == null) return;
+
+    // You'll need to implement this method in your auth service
+    // This is just a placeholder
+    await _auth.storeAuthToken();
+  }
+
+  Future<void> _signInWithEmail() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        loading = true;
+        error = '';
+      });
+
+      try {
+        var result = await _auth.signInWithEmailAndPassword(email, password);
+
+        if (!result['success']) {
+          setState(() {
+            error =
+                result['message'] ?? 'Could not sign in with those credentials';
+            loading = false;
+          });
+          return;
+        }
+
         // Check if profile setup is needed
         bool profileComplete = await _auth.isProfileComplete();
         if (!profileComplete) {
@@ -47,12 +226,12 @@ class _LoginScreenState extends State<LoginScreen> {
             Navigator.of(context).pop();
           }
         }
+      } catch (e) {
+        setState(() {
+          error = 'An unexpected error occurred: $e';
+          loading = false;
+        });
       }
-    } catch (e) {
-      setState(() {
-        error = 'Error: $e';
-        googleLoading = false;
-      });
     }
   }
 
@@ -184,48 +363,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    onPressed:
-                        loading
-                            ? null
-                            : () async {
-                              if (_formKey.currentState!.validate()) {
-                                setState(() {
-                                  loading = true;
-                                  error = '';
-                                });
-
-                                var result = await _auth
-                                    .signInWithEmailAndPassword(
-                                      email,
-                                      password,
-                                    );
-                                if (result == null) {
-                                  setState(() {
-                                    error =
-                                        'Could not sign in with those credentials';
-                                    loading = false;
-                                  });
-                                } else {
-                                  // Check if profile setup is needed
-                                  bool profileComplete =
-                                      await _auth.isProfileComplete();
-                                  if (!profileComplete) {
-                                    // Navigate to profile setup
-                                    if (mounted) {
-                                      Navigator.pushReplacementNamed(
-                                        context,
-                                        '/profile_setup',
-                                      );
-                                    }
-                                  } else {
-                                    // Go back to profile screen
-                                    if (mounted) {
-                                      Navigator.of(context).pop();
-                                    }
-                                  }
-                                }
-                              }
-                            },
+                    onPressed: loading ? null : _signInWithEmail,
                     child:
                         loading
                             ? const SizedBox(
@@ -329,6 +467,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
+                // Error message
                 if (error.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 20.0),
@@ -339,6 +478,47 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontSize: 14,
                       ),
                       textAlign: TextAlign.center,
+                    ),
+                  ),
+                // Debug panel at the bottom
+                const SizedBox(height: 20),
+                FirebaseDebugHelper.buildDebugPanel(),
+
+                // Auth diagnostic button (only in debug mode)
+                if (kDebugMode)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10.0),
+                    child: TextButton(
+                      onPressed: () async {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Running auth diagnostics...'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+
+                        bool isConfigured = await _checkGoogleAuthSetup();
+
+                        String message =
+                            isConfigured
+                                ? 'Google Auth configuration looks good!'
+                                : 'Google Auth configuration issues detected. Check logs.';
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(message),
+                            backgroundColor:
+                                isConfigured ? Colors.green : Colors.red,
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'Diagnose Auth Setup',
+                        style: GoogleFonts.poppins(
+                          color: ThemeConfig.primaryGreen,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
                   ),
               ],

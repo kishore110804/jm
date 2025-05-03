@@ -349,7 +349,7 @@ class _HealthScreenState extends State<HealthScreen>
                           Row(
                             children: [
                               Text(
-                                '$_sleepHours\h $_sleepMinutes\m',
+                                '${_sleepHours}h ${_sleepMinutes}m',
                                 style: GoogleFonts.poppins(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,

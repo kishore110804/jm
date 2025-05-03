@@ -4,7 +4,6 @@ import '../screens/footsteps_screen.dart';
 import '../screens/health_screen.dart';
 import '../screens/friends_screen.dart';
 import '../screens/profile_screen.dart';
-import '../utils/theme_config.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});

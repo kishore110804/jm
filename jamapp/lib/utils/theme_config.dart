@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+// Defines the app theme, colors, and styling constants
 class ThemeConfig {
   // App color constants
   static const Color primaryGreen = Color(0xFF1AFF00);
@@ -15,8 +16,6 @@ class ThemeConfig {
       primary: primaryGreen,
       secondary: primaryGreen,
       surface: backgroundBlack,
-      background: backgroundBlack,
-      onBackground: textIvory,
       onSurface: textIvory,
     ),
     // Use Google Fonts for the app

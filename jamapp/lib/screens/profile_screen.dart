@@ -11,7 +11,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<User?>(context);
-    final AuthService _auth = AuthService();
+    final AuthService auth = AuthService();
 
     // If user is not authenticated, show login prompt
     if (user == null) {
@@ -123,7 +123,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             onPressed: () async {
-              await _auth.signOut();
+              await auth.signOut();
             },
             child: Text(
               'SIGN OUT',

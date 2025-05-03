@@ -1,3 +1,14 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    
+    dependencies {
+        classpath("com.google.gms:google-services:4.3.15")
+    }
+}
+
 allprojects {
     repositories {
         google()
@@ -14,6 +25,13 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+    if (project.hasProperty("android")) {
+        // Add this to fix the obsolete Java version warnings
+        project.the<org.gradle.api.plugins.JavaPluginExtension>().apply {
+            sourceCompatibility = JavaVersion.VERSION_17
+            targetCompatibility = JavaVersion.VERSION_17
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {

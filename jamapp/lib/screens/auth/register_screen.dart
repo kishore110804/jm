@@ -1,3 +1,4 @@
+// Manages user registration interface and account creation
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/auth_service.dart';
@@ -20,6 +21,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String error = '';
   bool loading = false;
   bool googleLoading = false;
+  String? displayName;
+  String? photoURL;
+  dynamic googleAccount;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Check if we have Google account data passed through arguments
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args != null && args is Map<String, dynamic>) {
+      // Prefill form with Google data
+      setState(() {
+        email = args['email'] ?? '';
+        displayName = args['displayName'] ?? '';
+        photoURL = args['photoURL'];
+        // Store Google account for later registration
+        googleAccount = args['googleAccount'];
+      });
+    }
+  }
 
   Future<void> _signInWithGoogle() async {
     setState(() {
@@ -28,31 +50,74 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      var result = await _auth.signInWithGoogle();
-      if (result == null) {
+      // Check if we have a Google account already from login screen
+      if (googleAccount != null) {
+        // Use the specialized method for existing Google account
+        await _registerWithGoogle();
+        return;
+      }
+
+      // Otherwise proceed with normal Google sign-in
+      // Use the result to check success status
+      final result = await _auth.signInWithGoogle();
+
+      if (!result['success']) {
         setState(() {
-          error = 'Could not sign in with Google';
+          error = result['message'] ?? 'Could not sign in with Google';
           googleLoading = false;
         });
+        return;
+      }
+
+      // Check if profile setup is needed
+      bool profileComplete = await _auth.isProfileComplete();
+      if (!profileComplete) {
+        // Navigate to profile setup
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/profile_setup');
+        }
       } else {
-        // Check if profile setup is needed
-        bool profileComplete = await _auth.isProfileComplete();
-        if (!profileComplete) {
-          // Navigate to profile setup
-          if (mounted) {
-            Navigator.pushReplacementNamed(context, '/profile_setup');
-          }
-        } else {
-          // Go back to profile screen
-          if (mounted) {
-            Navigator.of(context).pop();
-          }
+        // Go back to profile screen
+        if (mounted) {
+          Navigator.of(context).pop();
         }
       }
     } catch (e) {
       setState(() {
         error = 'Error: $e';
         googleLoading = false;
+      });
+    }
+  }
+
+  // Handle registration with Google account
+  Future<void> _registerWithGoogle() async {
+    if (googleAccount == null) return;
+
+    setState(() {
+      loading = true;
+      error = '';
+    });
+
+    try {
+      var result = await _auth.completeGoogleSignIn(googleAccount!);
+
+      if (!result['success']) {
+        setState(() {
+          error = result['message'] ?? 'Could not register with Google';
+          loading = false;
+        });
+        return;
+      }
+
+      // Navigate to profile setup
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/profile_setup');
+      }
+    } catch (e) {
+      setState(() {
+        error = 'An unexpected error occurred: $e';
+        loading = false;
       });
     }
   }
@@ -231,19 +296,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       email,
                                       password,
                                     );
-                                if (result == null) {
-                                  setState(() {
-                                    error = 'Please supply a valid email';
-                                    loading = false;
-                                  });
-                                } else {
-                                  // Navigate to profile setup after registration
+
+                                // Check if registration was successful
+                                if (result['success']) {
+                                  // Navigate to profile setup after successful registration
                                   if (mounted) {
                                     Navigator.pushReplacementNamed(
                                       context,
                                       '/profile_setup',
                                     );
                                   }
+                                } else {
+                                  // Show error message to user
+                                  setState(() {
+                                    error =
+                                        result['message'] ??
+                                        'Registration failed';
+                                    loading = false;
+                                  });
                                 }
                               }
                             },

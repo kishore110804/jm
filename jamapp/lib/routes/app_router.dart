@@ -1,36 +1,51 @@
 import 'package:flutter/material.dart';
-import '../screens/main_screen.dart';
-import '../screens/auth/login_screen.dart';
-import '../screens/auth/register_screen.dart';
-import '../screens/profile_setup/profile_setup_base.dart';
-import '../screens/settings/settings_screen.dart';
+import '../screens/auth/unified_auth_screen.dart';
+import '../screens/profile/profile_setup_screen.dart';
+import '../screens/home/home_screen.dart';
+import '../screens/error/connection_error_screen.dart';
 
 class AppRouter {
-  static const String initialRoute = '/';
-  static const String login = '/login';
-  static const String register = '/register';
-  static const String profileSetup = '/profile_setup';
-  static const String settings = '/settings';
+  static const String initialRoute = '/auth';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
+    // Extract args if available
+    final args = settings.arguments;
+
     switch (settings.name) {
-      case '/':
-        return MaterialPageRoute(builder: (_) => const MainScreen());
-      case '/login':
-        return MaterialPageRoute(builder: (_) => const LoginScreen());
-      case '/register':
-        return MaterialPageRoute(builder: (_) => const RegisterScreen());
+      case '/auth':
+        return MaterialPageRoute(
+          builder: (context) => const UnifiedAuthScreen(),
+        );
+
       case '/profile_setup':
-        return MaterialPageRoute(builder: (_) => const ProfileSetupBase());
-      case '/settings':
-        return MaterialPageRoute(builder: (_) => const SettingsScreen());
+        // Get user from arguments to pass to profile setup
+        final user = args as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (context) => ProfileSetupScreen(userData: user),
+        );
+
+      case '/home':
+        return MaterialPageRoute(builder: (context) => const HomeScreen());
+
+      case '/connection_error':
+        // Provide a specialized screen for connection errors
+        return MaterialPageRoute(
+          builder:
+              (context) => ConnectionErrorScreen(
+                message: args as String? ?? 'Failed to connect to server',
+                onRetry:
+                    () => Navigator.of(context).pushReplacementNamed('/auth'),
+              ),
+        );
+
+      // Add other routes as needed
+
       default:
         return MaterialPageRoute(
           builder:
-              (_) => Scaffold(
-                body: Center(
-                  child: Text('No route defined for ${settings.name}'),
-                ),
+              (context) => Scaffold(
+                appBar: AppBar(title: const Text('Not Found')),
+                body: Center(child: Text('Route ${settings.name} not found')),
               ),
         );
     }

@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 
+// Contains Firebase configuration options for different platforms
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     return const FirebaseOptions(
