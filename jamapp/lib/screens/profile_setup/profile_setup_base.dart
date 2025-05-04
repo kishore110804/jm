@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Replace AuthService
+import 'package:cloud_firestore/cloud_firestore.dart'; // Add Firestore
 import '../../utils/theme_config.dart';
-import '../../services/auth_service.dart';
 import 'name_step.dart';
 import 'username_step.dart';
 import 'age_step.dart';
@@ -16,7 +17,10 @@ class ProfileSetupBase extends StatefulWidget {
 
 class _ProfileSetupBaseState extends State<ProfileSetupBase> {
   final PageController _pageController = PageController(initialPage: 0);
-  final AuthService _authService = AuthService();
+  final FirebaseAuth _auth =
+      FirebaseAuth.instance; // Use Firebase Auth directly
+  final FirebaseFirestore _firestore =
+      FirebaseFirestore.instance; // Use Firestore
   int _currentPage = 0;
   String _name = '';
   String _username = '';
@@ -79,16 +83,16 @@ class _ProfileSetupBaseState extends State<ProfileSetupBase> {
 
           // Save all profile data
           try {
-            await _authService.updateUserProfile(
+            await _updateUserProfile(
               name: _name,
               username: _username,
               age: _age,
               photoURL: _photoURL,
             );
 
-            // Navigate back to profile page
+            // Navigate back to home page
             if (mounted) {
-              Navigator.of(context).pop();
+              Navigator.of(context).pushReplacementNamed('/home');
             }
           } catch (e) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -110,6 +114,66 @@ class _ProfileSetupBaseState extends State<ProfileSetupBase> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  // Update user profile with error handling for PigeonUserInfo issues
+  Future<void> _updateUserProfile({
+    required String name,
+    required String username,
+    String? age,
+    String? photoURL,
+  }) async {
+    debugPrint('🔍 Starting to update user profile');
+
+    try {
+      User? currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        debugPrint('❌ Error: User not authenticated');
+        throw Exception('User not authenticated');
+      }
+
+      debugPrint('👤 Current User: ${currentUser.uid}');
+
+      // Create a safe, simple data object with only primitive types
+      final Map<String, dynamic> updateData = {
+        'name': name,
+        'username': username,
+        'profileComplete': true,
+        'updatedAt':
+            FieldValue.serverTimestamp(), // Use server timestamp to avoid Pigeon issues
+      };
+
+      // Only add optional fields if they're provided and non-null
+      if (age != null && age.isNotEmpty) updateData['age'] = age;
+
+      debugPrint('📝 Update data: $updateData');
+
+      // Use set with merge option instead of update to handle both new and existing documents
+      await _firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .set(updateData, SetOptions(merge: true));
+
+      debugPrint('✅ Firestore update successful');
+
+      // Update Firebase Auth display name only - wrap in try-catch to isolate potential errors
+      try {
+        await currentUser.updateDisplayName(name);
+        debugPrint('✅ Firebase Auth displayName updated');
+      } catch (authUpdateError) {
+        debugPrint(
+          '⚠️ Could not update Auth profile, but Firestore updated: $authUpdateError',
+        );
+      }
+
+      debugPrint('✅ Profile update completed successfully');
+
+      // Navigation should happen outside this method
+    } catch (e) {
+      debugPrint('❌ Error updating profile: $e');
+      // Convert the error to a simpler format to avoid Pigeon issues
+      throw Exception('Failed to update profile: ${e.toString()}');
+    }
   }
 
   @override

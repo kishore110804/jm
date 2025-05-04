@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/storage_service.dart';
 import '../../utils/theme_config.dart';
+import '../main_app_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   final Map<String, dynamic>? userData;
@@ -96,8 +98,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       );
 
       if (mounted) {
-        // Navigate to home screen
-        Navigator.of(context).pushReplacementNamed('/home');
+        // Show profile completion screen
+        _showProfileCompletedDialog();
       }
     } catch (e) {
       setState(() {
@@ -110,6 +112,87 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         });
       }
     }
+  }
+
+  void _showProfileCompletedDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.grey[900],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: ThemeConfig.primaryGreen, width: 2),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: ThemeConfig.primaryGreen.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.check_circle_outline,
+                      color: ThemeConfig.primaryGreen,
+                      size: 80,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Profile Complete!',
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: ThemeConfig.textIvory,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Your profile has been successfully set up. You\'re all ready to start tracking your fitness journey!',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      color: ThemeConfig.textIvory.withOpacity(0.8),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close dialog
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (context) => const MainAppScreen(),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ThemeConfig.primaryGreen,
+                      foregroundColor: Colors.black,
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Start Your Journey',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
   }
 
   @override

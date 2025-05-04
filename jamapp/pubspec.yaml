@@ -40,19 +40,24 @@ dependencies:
   firebase_core: ^2.15.1
   firebase_auth: ^4.9.0
   cloud_firestore: ^4.9.1
-  firebase_storage: ^11.2.6  # For profile photo upload
+  firebase_storage: ^11.2.6
   provider: ^6.0.5
-  google_sign_in: ^6.1.5  # Add Google Sign-In dependency
-  image_picker: ^1.0.4  # For picking profile photos
+  google_sign_in: ^6.1.5
+  image_picker: ^1.0.4
   package_info_plus: ^4.0.2
   shared_preferences: ^2.2.0
+
+  # Step counter and visualization dependencies
+  percent_indicator: ^4.2.3
+  fl_chart: ^0.64.0
+  intl: ^0.18.1
 
   # Secure authentication dependencies
   crypto: ^3.0.3
   flutter_secure_storage: ^9.0.0
-  # Optional but recommended for production apps
-  # device_info_plus: ^9.1.0
-  # connectivity_plus: ^5.0.2
+
+  # Sensors for step counting
+  sensors_plus: ^3.0.3
 
 dev_dependencies:
   flutter_test:

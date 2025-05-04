@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>We need access to your health data to track your steps and fitness progress</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>We need access to your health data to track your steps and fitness progress</string>
+	<key>NSMotionUsageDescription</key>
+	<string>We need to access your motion activity to count your steps</string>
 </dict>
 </plist>

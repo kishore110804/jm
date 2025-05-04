@@ -7,6 +7,8 @@ import '../../services/auth_service.dart';
 import '../../services/storage_service.dart';
 import '../../utils/theme_config.dart';
 import '../../widgets/confirm_dialog.dart';
+import 'package:provider/provider.dart';
+import '../../providers/health_provider.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({Key? key}) : super(key: key);
@@ -122,8 +124,14 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully')),
+          const SnackBar(
+            content: Text('Profile updated successfully'),
+            backgroundColor: ThemeConfig.primaryGreen,
+          ),
         );
+
+        // Go back to previous screen
+        Navigator.pop(context);
       }
     } catch (e) {
       setState(() {
@@ -151,39 +159,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
 
     if (shouldProceed && mounted) {
       Navigator.pushNamed(context, '/update_email', arguments: _email);
-    }
-  }
-
-  Future<void> _deleteAccount() async {
-    final shouldDelete =
-        await showDialog<bool>(
-          context: context,
-          builder:
-              (context) => ConfirmDialog(
-                title: 'Delete Account',
-                content:
-                    'This will permanently delete your account and all associated data. This action cannot be undone. Are you sure?',
-                confirmText: 'Delete Account',
-                cancelText: 'Cancel',
-                isDestructive: true,
-              ),
-        ) ??
-        false;
-
-    if (shouldDelete) {
-      try {
-        setState(() => _isLoading = true);
-        await _authService.deleteAccount();
-
-        if (mounted) {
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        }
-      } catch (e) {
-        setState(() {
-          _errorMessage = 'Failed to delete account: $e';
-          _isLoading = false;
-        });
-      }
     }
   }
 
@@ -399,52 +374,131 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
 
               const SizedBox(height: 30),
 
-              // Password change button
-              OutlinedButton(
-                onPressed:
-                    () => Navigator.pushNamed(context, '/change_password'),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: ThemeConfig.primaryGreen),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 24,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+              // Connect with Google Fit
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[850],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[700]!),
                 ),
-                child: Text(
-                  'Change Password',
-                  style: GoogleFonts.poppins(
-                    color: ThemeConfig.primaryGreen,
-                    fontWeight: FontWeight.w500,
-                  ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.monitor_heart,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Connect with Google Fit',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600,
+                                  color: ThemeConfig.textIvory,
+                                ),
+                              ),
+                              Text(
+                                'Sync your health data automatically',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: ThemeConfig.textIvory.withOpacity(0.7),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: false, // Replace with actual state
+                          onChanged: (value) {
+                            // Implement Google Fit integration
+                          },
+                          activeColor: ThemeConfig.primaryGreen,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              // Delete account button
-              OutlinedButton(
-                onPressed: _deleteAccount,
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.red),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 24,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+              // Connect with Health Services
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[850],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[700]!),
                 ),
-                child: Text(
-                  'Delete Account',
-                  style: GoogleFonts.poppins(
-                    color: Colors.red,
-                    fontWeight: FontWeight.w500,
-                  ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.monitor_heart,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Connect with Health Services',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600,
+                                  color: ThemeConfig.textIvory,
+                                ),
+                              ),
+                              Text(
+                                'Sync your health data automatically',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: ThemeConfig.textIvory.withOpacity(0.7),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Consumer<HealthProvider>(
+                          builder: (context, provider, child) {
+                            return Switch(
+                              value: provider.isAuthorized,
+                              onChanged: (value) async {
+                                if (value) {
+                                  await provider.requestAuthorization();
+                                }
+                              },
+                              activeColor: ThemeConfig.primaryGreen,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
+
+              const SizedBox(height: 16),
 
               // Error message
               if (_errorMessage != null)
