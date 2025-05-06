@@ -1,58 +1,102 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
-import 'firebase_config.dart';
-import 'routes/app_router.dart';
+import 'screens/auth/simple_auth_screen.dart';
+import 'screens/profile/profile_setup_screen.dart';
+import 'screens/home/home_screen.dart';
+import 'screens/main_app_screen.dart';
 import 'utils/theme_config.dart';
 import 'providers/health_provider.dart';
-
-// Auth screens
-import 'screens/auth/simple_auth_screen.dart';
-import 'screens/auth/auth_success_screen.dart';
-
-// Main app screens
-import 'screens/main_app_screen.dart';
-import 'screens/home_screen.dart';
-
-// Profile screens
-import 'screens/profile/profile_setup_screen.dart';
-import 'screens/profile/account_settings_screen.dart';
+import 'services/auth_service.dart';
+import 'services/storage_service.dart';
 
 void main() async {
-  // Initialize Flutter binding
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize Firebase with our custom configuration
-  await initializeFirebase();
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => HealthProvider()),
-        // Add other providers here
-      ],
-      child: const MyApp(),
-    ),
-  );
+  await Firebase.initializeApp();
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'JamSync',
-      theme: ThemeConfig.darkTheme,
-      initialRoute: AppRouter.initialRoute,
-      onGenerateRoute: AppRouter.onGenerateRoute,
-      debugShowCheckedModeBanner: false,
-      routes: {
-        '/': (context) => const HomeScreen(),
-        '/login': (context) => const SimpleAuthScreen(),
-        '/auth_success': (context) => const AuthSuccessScreen(),
-        '/main_app': (context) => const MainAppScreen(),
-        '/profile_setup': (context) => const ProfileSetupScreen(),
-        '/account_settings': (context) => const AccountSettingsScreen(),
+    return MultiProvider(
+      providers: [
+        Provider<AuthService>(create: (_) => AuthService()),
+        Provider<StorageService>(create: (_) => StorageService()),
+        ChangeNotifierProvider<HealthProvider>(create: (_) => HealthProvider()),
+      ],
+      child: MaterialApp(
+        title: 'JamSync',
+        theme: ThemeData(
+          primaryColor: ThemeConfig.primaryGreen,
+          scaffoldBackgroundColor: ThemeConfig.backgroundBlack,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: ThemeConfig.backgroundBlack,
+            elevation: 0,
+            centerTitle: true,
+            titleTextStyle: TextStyle(
+              color: ThemeConfig.textIvory,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+            iconTheme: IconThemeData(color: ThemeConfig.textIvory),
+          ),
+        ),
+        home: const AuthGatekeeper(),
+        routes: {
+          '/auth': (context) => const SimpleAuthScreen(),
+          '/profile_setup': (context) => const ProfileSetupScreen(),
+          '/home': (context) => const MainAppScreen(),
+        },
+      ),
+    );
+  }
+}
+
+class AuthGatekeeper extends StatelessWidget {
+  const AuthGatekeeper({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        // If the snapshot has user data, then they're logged in
+        if (snapshot.hasData && snapshot.data != null) {
+          // Check if profile is complete
+          return FutureBuilder<DocumentSnapshot>(
+            future: FirebaseFirestore.instance
+                .collection('users')
+                .doc(snapshot.data!.uid)
+                .get(),
+            builder: (context, userSnapshot) {
+              if (userSnapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(
+                    child: CircularProgressIndicator(color: ThemeConfig.primaryGreen),
+                  ),
+                );
+              }
+              
+              // If profile is not complete, direct to profile setup
+              if (!userSnapshot.hasData || 
+                  !userSnapshot.data!.exists || 
+                  userSnapshot.data!['profileComplete'] != true) {
+                return const ProfileSetupScreen();
+              }
+              
+              // Otherwise, go to main app
+              return const MainAppScreen();
+            },
+          );
+        }
+        
+        // Otherwise, they're not logged in
+        return const SimpleAuthScreen();
       },
     );
   }

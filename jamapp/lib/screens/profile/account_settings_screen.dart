@@ -109,7 +109,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       await _authService.updateUserProfile(
         name: _displayName ?? '',
         username: _username ?? '',
-        bio: _bio,
+      
         photoURL: photoURL,
       );
 

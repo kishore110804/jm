@@ -60,65 +60,78 @@ class _MainAppScreenState extends State<MainAppScreen> {
       body: _screens[_currentIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
+          color: Colors.black,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withOpacity(0.3),
               blurRadius: 10,
-              spreadRadius: 5,
+              offset: const Offset(0, -5),
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          backgroundColor: Colors.grey[900],
+          selectedItemColor: Colors.black,
+          unselectedItemColor: ThemeConfig.textIvory.withOpacity(0.7),
+          type: BottomNavigationBarType.fixed,
+          showSelectedLabels: true,
+          showUnselectedLabels: true,
+          selectedLabelStyle: GoogleFonts.poppins(
+            fontWeight: FontWeight.w800,
+            fontSize: 13,
           ),
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
-            backgroundColor: Colors.grey[900],
-            selectedItemColor: ThemeConfig.primaryGreen,
-            unselectedItemColor: ThemeConfig.textIvory.withOpacity(0.6),
-            type: BottomNavigationBarType.fixed,
-            showSelectedLabels: true,
-            showUnselectedLabels: true,
-            selectedLabelStyle: GoogleFonts.poppins(
-              fontWeight: FontWeight.w600,
+          unselectedLabelStyle: GoogleFonts.poppins(
+            fontWeight: FontWeight.w500,
+            fontSize: 12,
+          ),
+          elevation: 0,
+          items: [
+            _buildNavItem(Icons.home_outlined, Icons.home, 'Home', 0),
+            _buildNavItem(
+              Icons.fitness_center_outlined,
+              Icons.fitness_center,
+              'Workout',
+              1,
             ),
-            unselectedLabelStyle: GoogleFonts.poppins(),
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
-                activeIcon: Icon(Icons.home),
-                label: 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.fitness_center_outlined),
-                activeIcon: Icon(Icons.fitness_center),
-                label: 'Workout',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.group_outlined),
-                activeIcon: Icon(Icons.group),
-                label: 'Social',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                activeIcon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-            ],
-          ),
+            _buildNavItem(Icons.group_outlined, Icons.group, 'Social', 2),
+            _buildNavItem(Icons.person_outline, Icons.person, 'Profile', 3),
+          ],
         ),
       ),
+    );
+  }
+
+  BottomNavigationBarItem _buildNavItem(
+    IconData inactiveIcon,
+    IconData activeIcon,
+    String label,
+    int index,
+  ) {
+    final bool isSelected = _currentIndex == index;
+
+    return BottomNavigationBarItem(
+      icon: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? ThemeConfig.primaryGreen : Colors.transparent,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Icon(
+          isSelected ? activeIcon : inactiveIcon,
+          color:
+              isSelected
+                  ? Colors.black
+                  : ThemeConfig.textIvory.withOpacity(0.7),
+        ),
+      ),
+      label: label,
+      backgroundColor: Colors.transparent,
     );
   }
 }

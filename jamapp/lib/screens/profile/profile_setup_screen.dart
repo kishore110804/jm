@@ -7,6 +7,8 @@ import '../../services/storage_service.dart';
 import '../../utils/theme_config.dart';
 import '../main_app_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   final Map<String, dynamic>? userData;
@@ -26,12 +28,62 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   File? _imageFile;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _isCheckingProfile = true;
 
   @override
   void initState() {
     super.initState();
+    // Check if profile is complete and redirect if needed
+    _checkProfileStatus();
+
     // Pre-fill with any existing data
     _nameController.text = widget.userData?['displayName'] ?? '';
+  }
+
+  Future<void> _checkProfileStatus() async {
+    setState(() {
+      _isCheckingProfile = true;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final doc =
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .get();
+
+        if (doc.exists && doc.data()?['profileComplete'] == true) {
+          // Profile is complete, navigate to main app screen
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const MainAppScreen()),
+            );
+          }
+          return;
+        }
+
+        // Pre-fill data from Firestore if available
+        if (doc.exists) {
+          setState(() {
+            _nameController.text = doc.data()?['displayName'] ?? '';
+            _usernameController.text = doc.data()?['username'] ?? '';
+            if (doc.data()?['age'] != null) {
+              _ageController.text = doc.data()!['age'].toString();
+            }
+          });
+        }
+      }
+    } catch (e) {
+      print('Error checking profile status: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCheckingProfile = false;
+        });
+      }
+    }
   }
 
   @override
@@ -89,12 +141,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         );
       }
 
-      // Update user profile
+      // Update user profile with null-safe handling of photoURL
       await authService.updateUserProfile(
         name: _nameController.text,
         username: _usernameController.text,
         age: _ageController.text,
-        photoURL: photoURL,
+        photoURL:
+            photoURL ?? '', // Use empty string as fallback if photoURL is null
       );
 
       if (mounted) {
@@ -166,11 +219,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   ElevatedButton(
                     onPressed: () {
                       Navigator.of(context).pop(); // Close dialog
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                          builder: (context) => const MainAppScreen(),
-                        ),
-                      );
+                      Navigator.of(context).pushReplacementNamed(
+                        '/home',
+                      ); // Use named route for consistency
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ThemeConfig.primaryGreen,
@@ -181,7 +232,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       ),
                     ),
                     child: Text(
-                      'Start Your Journey',
+                      'Go to Home Page',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -197,6 +248,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isCheckingProfile) {
+      return Scaffold(
+        backgroundColor: ThemeConfig.backgroundBlack,
+        body: Center(
+          child: CircularProgressIndicator(color: ThemeConfig.primaryGreen),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: ThemeConfig.backgroundBlack,
       appBar: AppBar(

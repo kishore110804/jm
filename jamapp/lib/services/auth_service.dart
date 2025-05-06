@@ -79,38 +79,33 @@ class AuthService {
   Future<void> updateUserProfile({
     required String name,
     required String username,
-    String? bio,
-    String? photoURL,
     String? age,
+    String? photoURL, // Change parameter type to accept nullable String
   }) async {
-    try {
-      User? user = _auth.currentUser;
-      if (user == null) {
-        throw Exception('No authenticated user found');
-      }
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw Exception('No authenticated user found');
 
-      // Update in Firestore
-      final Map<String, dynamic> userData = {
-        'displayName': name,
-        'username': username,
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      };
+    // Convert age to int if provided
+    int? ageInt;
+    if (age != null && age.isNotEmpty) {
+      ageInt = int.tryParse(age);
+    }
 
-      // Only add optional fields if they are provided
-      if (bio != null) userData['bio'] = bio;
-      if (photoURL != null) userData['photoURL'] = photoURL;
-      if (age != null && age.isNotEmpty) {
-        // Convert age to integer if possible
-        int? ageInt = int.tryParse(age);
-        userData['age'] = ageInt ?? age;
-      }
+    // Update Firestore document
+    await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+      'displayName': name,
+      'username': username,
+      if (ageInt != null) 'age': ageInt,
+      if (photoURL != null)
+        'photoURL': photoURL, // Only update if photoURL is provided
+      'profileComplete': true,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
 
-      await _firestore.collection('users').doc(user.uid).update(userData);
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ Error updating user profile: $e');
-      }
-      throw Exception('Failed to update profile: $e');
+    // Update auth profile
+    await user.updateDisplayName(name);
+    if (photoURL != null) {
+      await user.updatePhotoURL(photoURL);
     }
   }
 
@@ -177,6 +172,72 @@ class AuthService {
         print('❌ Error generating watch token: $e');
       }
       return null;
+    }
+  }
+
+  // Validate a pairing code for watch authentication
+  Future<Map<String, dynamic>?> validatePairingCode(String code) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final now = Timestamp.now();
+
+      // Find the code in Firestore
+      final codeQuery =
+          await firestore
+              .collection('pairing_codes')
+              .where('code', isEqualTo: code)
+              .where('expiryTime', isGreaterThan: now)
+              .limit(1)
+              .get();
+
+      // If code exists and hasn't expired
+      if (codeQuery.docs.isNotEmpty) {
+        final codeDoc = codeQuery.docs.first;
+        final userId = codeDoc.data()['userId'];
+
+        // Get the user data
+        final userDoc = await firestore.collection('users').doc(userId).get();
+
+        if (userDoc.exists) {
+          // Return user data for authentication
+          return {'userId': userId, 'userData': userDoc.data(), 'valid': true};
+        }
+      }
+
+      return {'valid': false};
+    } catch (e) {
+      print('Error validating pairing code: $e');
+      return {'valid': false, 'error': e.toString()};
+    }
+  }
+
+  // Cleanup expired pairing codes
+  Future<void> cleanupExpiredPairingCodes() async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final now = Timestamp.now();
+
+      // Find expired codes
+      final expiredCodesQuery =
+          await firestore
+              .collection('pairing_codes')
+              .where('expiryTime', isLessThan: now)
+              .get();
+
+      // Delete each expired code
+      for (var doc in expiredCodesQuery.docs) {
+        await doc.reference.delete();
+      }
+
+      if (kDebugMode) {
+        print(
+          'Cleaned up ${expiredCodesQuery.docs.length} expired pairing codes',
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error cleaning up expired pairing codes: $e');
+      }
     }
   }
 }

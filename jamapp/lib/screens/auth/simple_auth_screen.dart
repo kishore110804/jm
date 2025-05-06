@@ -60,9 +60,9 @@ class _SimpleAuthScreenState extends State<SimpleAuthScreen> {
         await _createUserProfile(userCredential.user!);
       }
 
-      // Navigate to success screen instead of directly to home
+      // Navigate to profile setup screen instead of auth success
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/auth_success');
+        Navigator.of(context).pushReplacementNamed('/profile_setup');
       }
     } catch (e) {
       setState(() {

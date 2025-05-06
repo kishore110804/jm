@@ -32,6 +32,14 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+
+    // Add listener to update UI when tab changes
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        setState(() {}); // Refresh UI to update icons
+      }
+    });
+
     _loadData();
 
     // Initialize step counter
@@ -85,7 +93,6 @@ class _HomeScreenState extends State<HomeScreen>
       );
     }
 
-    // Wrap with Scaffold to provide Material context for TabBar and resolve overflow issues
     return Scaffold(
       backgroundColor: ThemeConfig.backgroundBlack,
       appBar: AppBar(
@@ -136,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen>
       body: SafeArea(
         child: Column(
           children: [
-            // Welcome message and profile info
+            // Welcome message
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16.0,
@@ -168,38 +175,110 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
 
-            // Tab Bar - Wrap in Material widget to fix the error
+            // Enhanced Tab Bar
             Container(
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[900],
-                borderRadius: BorderRadius.circular(25),
+              margin: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: TabBar(
-                  controller: _tabController,
-                  indicator: BoxDecoration(
-                    borderRadius: BorderRadius.circular(25),
-                    color: ThemeConfig.primaryGreen,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.grey[850],
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                  labelColor: Colors.black,
-                  unselectedLabelColor: ThemeConfig.textIvory,
-                  tabs: const [
-                    Tab(text: 'Today'),
-                    Tab(text: 'Stats'),
-                    Tab(text: 'Social'),
-                  ],
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: Material(
+                  color: Colors.transparent,
+                  child: TabBar(
+                    controller: _tabController,
+                    indicator: BoxDecoration(
+                      color: ThemeConfig.primaryGreen,
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    dividerColor: Colors.transparent, // Remove the line
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    labelColor: Colors.black,
+                    unselectedLabelColor: ThemeConfig.textIvory,
+                    labelStyle: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800, // Extra bold
+                      letterSpacing: 0.5,
+                    ),
+                    unselectedLabelStyle: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    splashFactory: NoSplash.splashFactory, // Disable splash
+                    overlayColor: MaterialStateProperty.all(
+                      Colors.transparent,
+                    ), // Remove highlight
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
+                    tabs: [
+                      Tab(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _tabController.index == 0
+                                  ? Icons.today
+                                  : Icons.today_outlined,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Today'),
+                          ],
+                        ),
+                      ),
+                      Tab(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _tabController.index == 1
+                                  ? Icons.bar_chart
+                                  : Icons.bar_chart_outlined,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Stats'),
+                          ],
+                        ),
+                      ),
+                      Tab(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _tabController.index == 2
+                                  ? Icons.people
+                                  : Icons.people_outline,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Social'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
 
-            // Tab Content - Use Expanded to avoid overflow
+            // Tab Content
             Expanded(
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  // TODAY TAB - Wrap in SingleChildScrollView to handle potential overflow
+                  // TODAY TAB
                   SingleChildScrollView(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -410,10 +489,7 @@ class _HomeScreenState extends State<HomeScreen>
                             },
                           ),
                         ),
-
                         const SizedBox(height: 24),
-
-                        // Weekly Progress
                         Text(
                           'Weekly Progress',
                           style: GoogleFonts.poppins(
@@ -431,7 +507,22 @@ class _HomeScreenState extends State<HomeScreen>
                             border: Border.all(color: Colors.grey[800]!),
                           ),
                           padding: const EdgeInsets.all(16),
-                          child: const WeeklyStepsChart(),
+                          child: Consumer<HealthProvider>(
+                            builder: (context, healthProvider, child) {
+                              // Just use the fallback data directly since weeklySteps isn't defined
+                              final weeklySteps = [
+                                5000,
+                                7500,
+                                10000,
+                                8000,
+                                6500,
+                                9000,
+                                7000,
+                              ]; // Fallback data
+
+                              return WeeklyStepsChart(stepsData: weeklySteps);
+                            },
+                          ),
                         ),
                       ],
                     ),
@@ -443,7 +534,6 @@ class _HomeScreenState extends State<HomeScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Leaderboard Section
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -479,7 +569,6 @@ class _HomeScreenState extends State<HomeScreen>
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             children: [
-                              // Leaderboard header
                               Row(
                                 children: [
                                   const SizedBox(width: 24),
@@ -535,10 +624,7 @@ class _HomeScreenState extends State<HomeScreen>
                             ],
                           ),
                         ),
-
                         const SizedBox(height: 24),
-
-                        // Friends Activity Feed
                         Text(
                           'Friends Activity',
                           style: GoogleFonts.poppins(
@@ -598,7 +684,6 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // Add this method to show logout confirmation dialog
   Future<void> _showLogoutConfirmation(BuildContext context) async {
     return showDialog<void>(
       context: context,

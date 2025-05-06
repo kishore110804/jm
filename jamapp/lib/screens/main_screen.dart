@@ -3,7 +3,7 @@ import '../screens/home_screen.dart';
 import '../screens/footsteps_screen.dart';
 import '../screens/health_screen.dart';
 import '../screens/friends_screen.dart';
-import '../screens/profile_screen.dart';
+import '../screens/profile/profile_screen.dart';  // correct path
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});

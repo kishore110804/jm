@@ -1,30 +1,24 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
-import 'package:path/path.dart' as path;
+
 
 // Manages file storage operations including profile image uploads and secure file management
 class StorageService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   Future<String> uploadProfileImage(String filePath, String userId) async {
-    try {
-      final file = File(filePath);
-      final ext = path.extension(filePath);
-      final ref = _storage.ref().child('profile_images/$userId$ext');
+    // Create a reference to the location where image will be stored
+    final Reference ref = _storage.ref().child('profile_images').child(userId);
 
-      // Upload the file
-      await ref.putFile(file);
+    // Upload the file
+    final UploadTask uploadTask = ref.putFile(File(filePath));
 
-      // Get download URL
-      final downloadUrl = await ref.getDownloadURL();
-      return downloadUrl;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error uploading profile image: $e');
-      }
-      throw Exception('Failed to upload profile image: $e');
-    }
+    // Wait until the file is uploaded and get download URL
+    final TaskSnapshot snapshot = await uploadTask;
+    final String downloadUrl = await snapshot.ref.getDownloadURL();
+
+    return downloadUrl;
   }
 
   Future<void> deleteProfileImage(String userId) async {
